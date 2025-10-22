@@ -30,14 +30,12 @@ export default function QuizStart() {
   }, [currentTimeLeft]);
 
   return (
-    <div className="relative">
-      <div className="absolute top-0 text-background text-2xl bg-foreground px-2">
+    <>
+      <div className="absolute top-0 left-0! text-background text-2xl bg-foreground px-2">
         {formatTime(currentTimeLeft)}
       </div>
       <Progress className="absolute top-0 rounded-none" value={progress} />
-      <div className="flex min-h-screen items-center justify-center">
-        <QuestionBox />
-      </div>
-    </div>
+      <QuestionBox />
+    </>
   );
 }
