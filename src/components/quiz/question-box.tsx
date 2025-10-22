@@ -1,3 +1,4 @@
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -8,6 +9,10 @@ import {
 } from "../ui/card";
 
 export default function QuestionBox() {
+  const router = useRouter();
+  const handleAnswerClick = () => {
+    router.push("/quiz/finish");
+  };
   return (
     <Card className="w-full sm:w-2xl">
       <CardHeader>
@@ -19,10 +24,18 @@ export default function QuestionBox() {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Button className="h-28 text-2xl">Option 1</Button>
-        <Button className="h-28 text-2xl">Option 2</Button>
-        <Button className="h-28 text-2xl">Option 3</Button>
-        <Button className="h-28 text-2xl">Option 4</Button>
+        <Button onClick={handleAnswerClick} className="h-28 text-2xl">
+          Option 1
+        </Button>
+        <Button onClick={handleAnswerClick} className="h-28 text-2xl">
+          Option 2
+        </Button>
+        <Button onClick={handleAnswerClick} className="h-28 text-2xl">
+          Option 3
+        </Button>
+        <Button onClick={handleAnswerClick} className="h-28 text-2xl">
+          Option 4
+        </Button>
       </CardContent>
     </Card>
   );
