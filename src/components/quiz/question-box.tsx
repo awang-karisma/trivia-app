@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import type { TriviaResponse } from "@/types/OpenTDB";
 import { Button } from "../ui/button";
@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "../ui/card";
@@ -44,6 +45,21 @@ export default function QuestionBox({
   ].answers.map((answer) => atob(answer));
   const correctAnswer = questions.results[currentQuestionIndex].correct_answer;
 
+  const unanswered = mappedQuestionsRef.current
+    .filter((q) => q.status === 0)
+    .length.toString();
+  const correct = mappedQuestionsRef.current
+    .filter((q) => q.status === 1)
+    .length.toString();
+  const incorrect = mappedQuestionsRef.current
+    .filter((q) => q.status === 2)
+    .length.toString();
+
+  const handleQuizTimeout = useCallback(() => {
+    const params = new URLSearchParams({ unanswered, correct, incorrect });
+    router.push(`/quiz/finish?${params.toString()}`);
+  }, [unanswered, correct, incorrect, router]);
+
   const handleAnswerClick = (answer: string) => {
     const status =
       answer === atob(questions.results[currentQuestionIndex].correct_answer)
@@ -53,20 +69,14 @@ export default function QuestionBox({
     mappedQuestionsRef.current[currentQuestionIndex].status = status;
 
     if (currentQuestionIndex >= mappedQuestionsRef.current.length - 1) {
-      const unanswered = mappedQuestionsRef.current
-        .filter((q) => q.status === 0)
-        .length.toString();
-      const correct = mappedQuestionsRef.current
-        .filter((q) => q.status === 1)
-        .length.toString();
-      const incorrect = mappedQuestionsRef.current
-        .filter((q) => q.status === 2)
-        .length.toString();
-      const params = new URLSearchParams({ unanswered, correct, incorrect });
-      router.push(`/quiz/finish?${params.toString()}`);
+      handleQuizTimeout();
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
+  };
+
+  const handleSkipButton = () => {
+    setCurrentQuestionIndex(currentQuestionIndex + 1);
   };
 
   const formatTime = (time: number) => {
@@ -85,9 +95,12 @@ export default function QuestionBox({
   }, []);
 
   useEffect(() => {
-    if (currentTimeLeft <= 0 && timer.current) clearInterval(timer.current);
+    if (currentTimeLeft <= 0 && timer.current) {
+      clearInterval(timer.current);
+      handleQuizTimeout();
+    }
     setProgress(Math.floor((currentTimeLeft / quizTimeout) * 100));
-  }, [currentTimeLeft, quizTimeout]);
+  }, [currentTimeLeft, quizTimeout, handleQuizTimeout]);
 
   return (
     <>
@@ -118,6 +131,11 @@ export default function QuestionBox({
               </Button>
             ))}
           </CardContent>
+          <CardFooter>
+            <Button variant={"ghost"} onClick={handleSkipButton}>
+              Skip
+            </Button>
+          </CardFooter>
         </Card>
       ) : (
         <div>Loading questions...</div>

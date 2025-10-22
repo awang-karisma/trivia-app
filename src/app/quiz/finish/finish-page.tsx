@@ -26,6 +26,7 @@ export default function FinishPage({
   incorrect?: number;
 }) {
   const router = useRouter();
+  const answered = (correct ?? 0) + (incorrect ?? 0);
   return (
     <Card className="w-full sm:w-2xl">
       <CardHeader>
@@ -34,10 +35,10 @@ export default function FinishPage({
           Congratulations for answering all the questions!
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-3 gap-2">
+      <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Item variant={"outline"}>
           <ItemContent>
-            <ItemTitle className="font-semibold">Jawaban Benar</ItemTitle>
+            <ItemTitle className="font-semibold">Correct Answers</ItemTitle>
             <ItemDescription className="text-5xl text-emerald-300">
               {correct}
             </ItemDescription>
@@ -45,7 +46,7 @@ export default function FinishPage({
         </Item>
         <Item variant={"outline"}>
           <ItemContent>
-            <ItemTitle className="font-semibold">Jawaban Salah</ItemTitle>
+            <ItemTitle className="font-semibold">Incorrect Answers</ItemTitle>
             <ItemDescription className="text-5xl text-rose-300">
               {incorrect}
             </ItemDescription>
@@ -53,7 +54,15 @@ export default function FinishPage({
         </Item>
         <Item variant={"outline"}>
           <ItemContent>
-            <ItemTitle className="font-semibold">Total Menjawab</ItemTitle>
+            <ItemTitle className="font-semibold">Answered</ItemTitle>
+            <ItemDescription className="text-5xl">{answered}</ItemDescription>
+          </ItemContent>
+        </Item>
+        <Item variant={"outline"}>
+          <ItemContent>
+            <ItemTitle className="font-semibold">
+              Unanswered / Skipped
+            </ItemTitle>
             <ItemDescription className="text-5xl">{unanswered}</ItemDescription>
           </ItemContent>
         </Item>
