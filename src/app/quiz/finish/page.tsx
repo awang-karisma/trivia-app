@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,6 +18,10 @@ import {
 
 export default function QuizFinish() {
   const router = useRouter();
+  const params = useSearchParams();
+  const unanswered = Number.parseInt(params.get("unanswered") ?? "0", 10);
+  const correct = Number.parseInt(params.get("correct") ?? "0", 10);
+  const incorrect = Number.parseInt(params.get("incorrect") ?? "0", 10);
   return (
     <Card className="w-full sm:w-2xl">
       <CardHeader>
@@ -31,7 +35,7 @@ export default function QuizFinish() {
           <ItemContent>
             <ItemTitle className="font-semibold">Jawaban Benar</ItemTitle>
             <ItemDescription className="text-5xl text-emerald-300">
-              10
+              {correct}
             </ItemDescription>
           </ItemContent>
         </Item>
@@ -39,14 +43,14 @@ export default function QuizFinish() {
           <ItemContent>
             <ItemTitle className="font-semibold">Jawaban Salah</ItemTitle>
             <ItemDescription className="text-5xl text-rose-300">
-              10
+              {incorrect}
             </ItemDescription>
           </ItemContent>
         </Item>
         <Item variant={"outline"}>
           <ItemContent>
             <ItemTitle className="font-semibold">Total Menjawab</ItemTitle>
-            <ItemDescription className="text-5xl">10</ItemDescription>
+            <ItemDescription className="text-5xl">{unanswered}</ItemDescription>
           </ItemContent>
         </Item>
       </CardContent>
