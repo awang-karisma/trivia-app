@@ -14,6 +14,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useLocalStorage } from "@/lib/storage";
 import { generateSHA256Hash } from "@/lib/utils";
+import type { Session } from "@/types/Session";
 import type { User } from "@/types/User";
 
 export default function LoginPage() {
@@ -22,10 +23,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("test");
   const [password2, setPassword2] = useState("test");
 
-  const { value: userDb, setValue: setUserDb } = useLocalStorage<User[]>(
-    "user",
-    [],
-  );
+  const [userDb, setUserDb] = useLocalStorage<User[]>("user", []);
+
+  const [_userState, setUserState] = useLocalStorage<Session>("session", {});
 
   const handleRegistration = async () => {
     if (password !== password2) {
@@ -42,6 +42,7 @@ export default function LoginPage() {
     const hashedPassword = await generateSHA256Hash(`${salt}${password}`);
     const newUserDb = [...userDb, { email, password: hashedPassword, salt }];
     setUserDb(newUserDb);
+    setUserState({ email, isLoggedIn: true });
     toast.success(
       `User ${email} sucessfully created! Redirecting to quiz page...`,
     );

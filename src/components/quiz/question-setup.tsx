@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLocalStorage } from "@/lib/storage";
+import type { TriviaQuestion } from "@/types/OpenTDB";
 
 export default function QuestionSetup({
   categories,
@@ -31,6 +33,12 @@ export default function QuestionSetup({
   const [quizType, setQuizType] = useState("");
   const [duration, setDuration] = useState(90);
 
+  const [savedDuration] = useLocalStorage<number>("timer", 90);
+  const [savedQuestions] = useLocalStorage<Array<TriviaQuestion>>(
+    "questions",
+    [],
+  );
+
   const handleSubmitButton = async () => {
     const searchParams = new URLSearchParams();
     if (difficulty !== "any" && difficulty !== "")
@@ -42,6 +50,14 @@ export default function QuestionSetup({
     searchParams.append("duration", (duration > 0 ? duration : 90).toString());
     router.push(`/quiz/start?${searchParams.toString()}`);
   };
+
+  useEffect(() => {
+    if (savedQuestions && savedQuestions.length > 0) {
+      const searchParams = new URLSearchParams();
+      searchParams.append("duration", savedDuration.toString());
+      router.push(`/quiz/start?${searchParams.toString()}`);
+    }
+  }, [savedQuestions, savedDuration, router]);
 
   return (
     <Card className="w-full sm:w-xl">
