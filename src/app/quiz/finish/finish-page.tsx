@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,6 +16,8 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
+import { deleteStorageKey, useLocalStorage } from "@/lib/storage";
+import type { Session } from "@/types/Session";
 
 export default function FinishPage({
   unanswered,
@@ -27,6 +30,15 @@ export default function FinishPage({
 }) {
   const router = useRouter();
   const answered = (correct ?? 0) + (incorrect ?? 0);
+
+  const [userState, setUserState] = useLocalStorage<Session>("session", {});
+  useEffect(() => {
+    setUserState(userState);
+    deleteStorageKey("timer");
+    deleteStorageKey("questions");
+    deleteStorageKey("questionIndex");
+  }, [userState, setUserState]);
+
   return (
     <Card className="w-full sm:w-2xl">
       <CardHeader>

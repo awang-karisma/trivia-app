@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,23 +14,35 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useLocalStorage } from "@/lib/storage";
 import { generateSHA256Hash } from "@/lib/utils";
+import type { Session } from "@/types/Session";
 import type { User } from "@/types/User";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("test@example.com");
   const [password, setPassword] = useState("test");
-  const { value: userDb } = useLocalStorage<User[]>("user", []);
+  const [userDb] = useLocalStorage<User[]>("user", []);
+  const [userState, setUserState] = useLocalStorage<Session>("session", {});
+
+  useEffect(() => {
+    if (userState.isLoggedIn) setTimeout(() => router.push("/quiz"), 2000);
+  }, [userState, router]);
+
   const handleLoginButton = async () => {
     const user = userDb.find((user) => user.email === email);
-    if (!user) return toast.error(`Can't find user ${email}`);
+    if (!user) {
+      setUserState({});
+      return toast.error(`Can't find user ${email}`);
+    }
 
     const hashedPassword = await generateSHA256Hash(`${user.salt}${password}`);
-    if (hashedPassword !== user.password)
+    if (hashedPassword !== user.password) {
+      setUserState({});
       return toast.error(`Incorrect password`);
+    }
 
     toast.success(`Welcome, ${email}! Redirecting to quiz page...`);
-    setTimeout(() => router.push("/quiz"), 2000);
+    setUserState({ email, isLoggedIn: true });
   };
 
   return (

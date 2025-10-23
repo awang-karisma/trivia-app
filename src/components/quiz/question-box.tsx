@@ -1,8 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Progress } from "@/components/ui/progress";
-import type { TriviaResponse } from "@/types/OpenTDB";
+import { useLocalStorage } from "@/lib/storage";
+import type { TriviaQuestion, TriviaResponse } from "@/types/OpenTDB";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -24,34 +25,48 @@ export default function QuestionBox({
 
   const quizTimeout = duration ?? 90;
   const timer = useRef<ReturnType<typeof setInterval>>(null);
-  const [currentTimeLeft, setCurrentTimeLeft] = useState(quizTimeout);
   const [progress, setProgress] = useState(100);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  const mappedQuestions = questions.results.map((q) => ({
-    question: q.question,
-    answers: [q.correct_answer, ...q.incorrect_answers].sort(
-      () => Math.random() - 0.5,
-    ),
-    status: 0,
-  }));
-  const mappedQuestionsRef = useRef(mappedQuestions);
+  const [currentTimeLeft, setCurrentTimeLeft] = useLocalStorage<number>(
+    "timer",
+    quizTimeout,
+  );
+  const [currentQuestions, setCurrentQuestions] = useLocalStorage<
+    Array<TriviaQuestion>
+  >("questions", []);
+  const [currentQuestionIndex, setCurrentQuestionIndex] =
+    useLocalStorage<number>("questionIndex", 0);
+
+  const mappedQuestions = useMemo(
+    () =>
+      currentQuestions.map((q) => ({
+        question: q.question,
+        answers: [q.correct_answer, ...q.incorrect_answers].sort(
+          () => Math.random() - 0.5,
+        ),
+        status: 0,
+      })),
+    [currentQuestions],
+  );
+
   // status -> 0: unanswered, 1: correct, 2: incorrect
   const currentQuestion = atob(
-    mappedQuestionsRef.current[currentQuestionIndex].question,
+    mappedQuestions[currentQuestionIndex]?.question ?? "",
   );
-  const currentAnswers = mappedQuestionsRef.current[
-    currentQuestionIndex
-  ].answers.map((answer) => atob(answer));
-  const correctAnswer = questions.results[currentQuestionIndex].correct_answer;
+  const currentAnswers = mappedQuestions[currentQuestionIndex]?.answers.map(
+    (answer) => atob(answer),
+  );
+  const correctAnswer = atob(
+    currentQuestions[currentQuestionIndex]?.correct_answer ?? "",
+  );
 
-  const unanswered = mappedQuestionsRef.current
+  const unanswered = mappedQuestions
     .filter((q) => q.status === 0)
     .length.toString();
-  const correct = mappedQuestionsRef.current
+  const correct = mappedQuestions
     .filter((q) => q.status === 1)
     .length.toString();
-  const incorrect = mappedQuestionsRef.current
+  const incorrect = mappedQuestions
     .filter((q) => q.status === 2)
     .length.toString();
 
@@ -62,13 +77,13 @@ export default function QuestionBox({
 
   const handleAnswerClick = (answer: string) => {
     const status =
-      answer === atob(questions.results[currentQuestionIndex].correct_answer)
+      answer === atob(currentQuestions[currentQuestionIndex].correct_answer)
         ? 1
         : 2;
 
-    mappedQuestionsRef.current[currentQuestionIndex].status = status;
+    mappedQuestions[currentQuestionIndex].status = status;
 
-    if (currentQuestionIndex >= mappedQuestionsRef.current.length - 1) {
+    if (currentQuestionIndex >= mappedQuestions.length - 1) {
       handleQuizTimeout();
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -76,7 +91,11 @@ export default function QuestionBox({
   };
 
   const handleSkipButton = () => {
-    setCurrentQuestionIndex(currentQuestionIndex + 1);
+    if (currentQuestionIndex >= mappedQuestions.length - 1) {
+      handleQuizTimeout();
+    } else {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
   };
 
   const formatTime = (time: number) => {
@@ -92,7 +111,7 @@ export default function QuestionBox({
     return () => {
       if (timer.current) clearInterval(timer.current);
     };
-  }, []);
+  }, [setCurrentTimeLeft]);
 
   useEffect(() => {
     if (currentTimeLeft <= 0 && timer.current) {
@@ -102,26 +121,35 @@ export default function QuestionBox({
     setProgress(Math.floor((currentTimeLeft / quizTimeout) * 100));
   }, [currentTimeLeft, quizTimeout, handleQuizTimeout]);
 
+  useEffect(() => {
+    if (!questions.results) return;
+    if (questions.results.length === 0) return;
+    setCurrentQuestions((oldValue) => {
+      if (oldValue && oldValue.length !== 0) return oldValue;
+      return questions.results;
+    });
+  }, [questions.results, setCurrentQuestions]);
+
   return (
     <>
       <div className="absolute top-0 left-0! text-background text-2xl bg-foreground px-2">
         {formatTime(currentTimeLeft)}
       </div>
       <Progress className="absolute top-0 rounded-none" value={progress} />
-      {mappedQuestionsRef.current.length > 0 ? (
-        <Card className="w-full sm:w-2xl">
-          <CardHeader>
-            <CardTitle className="text-lg text-muted-foreground">
-              Question {currentQuestionIndex + 1} of{" "}
-              {mappedQuestionsRef.current.length}
-            </CardTitle>
-            <CardDescription className="text-2xl text-foreground inline-block">
-              {currentQuestion}{" "}
-              <span className="text-background">{atob(correctAnswer)}</span>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {currentAnswers.map((answer) => (
+      <Card className="w-full sm:w-2xl">
+        <CardHeader>
+          <CardTitle className="text-lg text-muted-foreground">
+            Question {currentQuestionIndex + 1} of {mappedQuestions.length}
+          </CardTitle>
+          <CardDescription className="text-2xl text-foreground inline-block">
+            {currentQuestion}{" "}
+            <span className="text-background">{correctAnswer}</span>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {currentAnswers &&
+            currentAnswers.length > 0 &&
+            currentAnswers.map((answer) => (
               <Button
                 key={answer}
                 onClick={() => handleAnswerClick(answer)}
@@ -130,16 +158,13 @@ export default function QuestionBox({
                 {answer}
               </Button>
             ))}
-          </CardContent>
-          <CardFooter>
-            <Button variant={"ghost"} onClick={handleSkipButton}>
-              Skip
-            </Button>
-          </CardFooter>
-        </Card>
-      ) : (
-        <div>Loading questions...</div>
-      )}
+        </CardContent>
+        <CardFooter>
+          <Button variant={"ghost"} onClick={handleSkipButton}>
+            Skip
+          </Button>
+        </CardFooter>
+      </Card>
     </>
   );
 }

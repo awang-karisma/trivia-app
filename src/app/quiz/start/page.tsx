@@ -7,14 +7,14 @@ export default async function QuizStart({
   searchParams: Promise<Record<string, string>>;
 }) {
   "use server";
-  const config = await searchParams;
-  const url = `https://opentdb.com/api.php?amount=10&encode=base64&${new URLSearchParams(config).toString()}`;
+  const config = new URLSearchParams(await searchParams);
+  const url = `https://opentdb.com/api.php?amount=10&encode=base64&${config.toString()}`;
   const data = await fetch(url, { cache: "no-cache" });
   const questions = (await data.json()) as TriviaResponse;
 
   return (
     <QuestionBox
-      duration={Number.parseInt(config.duration, 10)}
+      duration={Number.parseInt(config.get("duration") ?? "90", 10)}
       questions={questions}
     />
   );
