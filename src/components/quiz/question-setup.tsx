@@ -38,7 +38,7 @@ export default function QuestionSetup({
     if (category !== "any" && category !== "")
       searchParams.append("category", category);
     if (quizType !== "any" && quizType !== "")
-      searchParams.append("quizType", quizType);
+      searchParams.append("type", quizType);
     searchParams.append("duration", (duration > 0 ? duration : 90).toString());
     router.push(`/quiz/start?${searchParams.toString()}`);
   };
